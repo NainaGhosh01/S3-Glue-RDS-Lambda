@@ -13,7 +13,7 @@ def handler(event=None, context=None):
 
     try:
         conn = psycopg2.connect(
-            host='${RDS_ENDPOINT}',
+            host='etl-db.ch0884o2o8rn.us-east-1.rds.amazonaws.com',
             database='etl_db',
             user='postgres',
             password='password',
