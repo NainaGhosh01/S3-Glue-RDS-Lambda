@@ -32,7 +32,8 @@ resource "aws_db_instance" "etl_rds" {
   engine               = "postgres"
   engine_version       = "15"
   instance_class       = "db.t3.micro"
-  name                 = "etl_db"
+  identifier           = "etl-db"
+  db_name              = "etl_db"
   username             = "postgres"
   password             = "password"
   publicly_accessible  = true
