@@ -16,7 +16,6 @@ pipeline {
             sh 'terraform init'
             // Exclude Lambda in first apply
             sh 'terraform apply -auto-approve -target=aws_s3_bucket.etl_bucket -target=aws_db_instance.etl_rds -target=aws_glue_catalog_database.etl_glue_db -target=aws_ecr_repository.etl_ecr_repo -target=aws_iam_role.lambda_exec -target=aws_iam_policy_attachment.lambda_logs'
-            #sh 'terraform apply -auto-approve'
           }
         }
       }
