@@ -1,5 +1,6 @@
 pipeline {
   agent any
+
   environment {
     AWS_DEFAULT_REGION = 'us-east-1'
     ECR_REPO = 'etl-ecr-repo'
@@ -16,10 +17,7 @@ pipeline {
     stage('Terraform Init & Apply') {
       steps {
         withCredentials([
-          [$class: 'UsernamePasswordMultiBinding',
-           credentialsId: 'aws-creds',
-           usernameVariable: 'AWS_ACCESS_KEY_ID',
-           passwordVariable: 'AWS_SECRET_ACCESS_KEY']
+          usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')
         ]) {
           dir('terraform') {
             sh '''
@@ -45,14 +43,16 @@ pipeline {
 
     stage('Push to ECR') {
       steps {
-        withCredentials([[
-          $class: 'AmazonWebServicesCredentialsBinding',
-          credentialsId: 'aws-creds'
-        ]]) {
+        withCredentials([
+          usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')
+        ]) {
           script {
             sh '''
               set -e
               REGION=us-east-1
+              export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+              export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+
               ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
               IMAGE=$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
 
@@ -69,10 +69,7 @@ pipeline {
     stage('Terraform Apply Lambda') {
       steps {
         withCredentials([
-          [$class: 'UsernamePasswordMultiBinding',
-           credentialsId: 'aws-creds',
-           usernameVariable: 'AWS_ACCESS_KEY_ID',
-           passwordVariable: 'AWS_SECRET_ACCESS_KEY']
+          usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')
         ]) {
           dir('terraform') {
             sh 'terraform apply -auto-approve -target=aws_lambda_function.etl_lambda'
@@ -84,12 +81,13 @@ pipeline {
     stage('Test Lambda') {
       steps {
         withCredentials([
-          [$class: 'UsernamePasswordMultiBinding',
-           credentialsId: 'aws-creds',
-           usernameVariable: 'AWS_ACCESS_KEY_ID',
-           passwordVariable: 'AWS_SECRET_ACCESS_KEY']
+          usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')
         ]) {
-          sh 'aws lambda invoke --function-name etl-lambda out.json --region us-east-1'
+          sh '''
+            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+            aws lambda invoke --function-name etl-lambda out.json --region us-east-1
+          '''
         }
       }
     }
