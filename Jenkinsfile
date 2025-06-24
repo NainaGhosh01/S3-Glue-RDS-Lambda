@@ -28,7 +28,7 @@ pipeline {
                 -target=aws_glue_catalog_database.etl_glue_db \
                 -target=aws_ecr_repository.etl_ecr_repo \
                 -target=aws_iam_role.lambda_exec \
-                -target=aws_iam_policy_attachment.lambda_logs
+                -target=aws_iam_policy_attachment.lambda_logs \
                 -target=aws_iam_policy.lambda_s3_access \
                 -target=aws_iam_policy_attachment.lambda_s3_access_attach
             '''
