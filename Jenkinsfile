@@ -29,14 +29,23 @@ pipeline {
     }
     stage('Push to ECR') {
       steps {
-        script {
-          sh '''
-          aws ecr get-login-password | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
-          docker tag etl-job:latest $(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
-          docker push $(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}
-          '''
-        }
-      }
+         withCredentials([[
+            $class: 'AmazonWebServicesCredentialsBinding',
+            credentialsId: 'aws-creds' 
+         ]]) {
+            script {
+              sh '''
+              ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+              REGION=us-east-1
+              REPO_NAME=etl-ecr-repo
+
+              aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+              docker tag etl-job:latest $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:latest
+              docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:latest
+              '''
+            }
+          }
+       }
     }
     stage('Terraform Apply Lambda') {
       steps {
